@@ -1,0 +1,150 @@
+--// Modern Styled Target Orbit Hub (UI Pro Design)
+local P, RS, LP = game:GetService("Players"), game:GetService("RunService"), game:GetService("Players").LocalPlayer
+local UIS = game:GetService("UserInputService")
+local C = {E=false,N="",R=8,S=3,P="HumanoidRootPart"}
+local ang, tC, vU = 0, nil, true
+local SG = Instance.new("ScreenGui", game.CoreGui)
+SG.Name = "ModernOrbitHub"
+
+local function MakeDraggable(obj)
+    local dragging, dragInput, dragStart, startPos
+    obj.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = obj.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    obj.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    UIS.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            obj.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+-- 1. Nút Ẩn/Hiện Menu (Thiết kế bo tròn, màu sắc sang trọng)
+local HB = Instance.new("TextButton", SG) 
+HB.Size, HB.Position = UDim2.new(0, 42, 0, 42), UDim2.new(0.05, 0, 0.12, 0)
+HB.BackgroundColor3, HB.Text, HB.TextColor3, HB.TextSize = Color3.fromRGB(35, 35, 45), "👁️", Color3.fromRGB(255, 255, 255), 16
+Instance.new("UICorner", HB).CornerRadius = UDim.new(0, 12)
+local HBStroke = Instance.new("UIStroke", HB) HBStroke.Color = Color3.fromRGB(80, 80, 100) HBStroke.Thickness = 1.5
+MakeDraggable(HB)
+
+-- 2. Khung Menu Chính (Phong cách Dark Mode hiện đại, bóng bẩy)
+local MF = Instance.new("Frame", SG) 
+MF.Size, MF.Position = UDim2.new(0, 240, 0, 270), UDim2.new(0.05, 0, 0.19, 0)
+MF.BackgroundColor3, MF.BorderSizePixel = Color3.fromRGB(22, 22, 28), 0
+Instance.new("UICorner", MF).CornerRadius = UDim.new(0, 14)
+local MFStroke = Instance.new("UIStroke", MF) MFStroke.Color = Color3.fromRGB(50, 50, 70) MFStroke.Thickness = 1.5
+MakeDraggable(MF)
+
+-- Tiêu đề Menu
+local Title = Instance.new("TextLabel", MF)
+Title.Size, Title.Position = UDim2.new(1, 0, 0, 35), UDim2.new(0, 0, 0, 0)
+Title.BackgroundTransparency, Title.Text, Title.TextColor3, Title.Font, Title.TextSize = 1, "⚡ ORBIT HUB ⚡", Color3.fromRGB(100, 180, 255), Enum.Font.GothamBold, 13
+
+-- Hàm tạo TextBox chuẩn đẹp
+local function CreateTextBox(posY, placeholder, defaultText)
+    local box = Instance.new("TextBox", MF)
+    box.Size, box.Position = UDim2.new(0.9, 0, 0, 38), UDim2.new(0.05, 0, 0, posY)
+    box.BackgroundColor3, box.PlaceholderText, box.Text = Color3.fromRGB(32, 32, 42), placeholder, defaultText
+    box.TextColor3, box.Font, box.TextSize = Color3.fromRGB(255, 255, 255), Enum.Font.Gotham, 12
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 8)
+    local stroke = Instance.new("UIStroke", box) stroke.Color = Color3.fromRGB(60, 60, 80) stroke.Thickness = 1
+    return box
+end
+
+-- Ô nhập tên và chiều rộng
+local NB = CreateTextBox(45, "Nhập tên địch...", "")
+local RBx = CreateTextBox(92, "Nhập chiều rộng (Mặc định: 8)...", "8")
+
+-- Hàm tạo Button chuẩn đẹp
+local function CreateButton(posY, text, color)
+    local btn = Instance.new("TextButton", MF)
+    btn.Size, btn.Position = UDim2.new(0.9, 0, 0, 40), UDim2.new(0.05, 0, 0, posY)
+    btn.BackgroundColor3, btn.Text, btn.TextColor3 = color, text, Color3.fromRGB(255, 255, 255)
+    btn.Font, btn.TextSize = Enum.Font.GothamBold, 12
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    return btn
+end
+
+-- Nút Cập nhật & Nút Bật/Tắt chính
+local RB = CreateButton(142, "🔄 Cập nhật Cài đặt", Color3.fromRGB(50, 120, 200))
+local TB = CreateButton(192, "Target Farm: OFF", Color3.fromRGB(200, 50, 60))
+
+-- Hiệu ứng ẩn hiện menu mượt mà
+HB.MouseButton1Click:Connect(function()
+    vU = not vU
+    MF.Visible = vU
+    HB.BackgroundColor3 = vU and Color3.fromRGB(35, 35, 45) or Color3.fromRGB(200, 50, 60)
+end)
+
+local function UpdateConfig()
+    C.N = NB.Text
+    local customRadius = tonumber(RBx.Text)
+    if customRadius then C.R = customRadius end
+end
+
+NB.FocusLost:Connect(UpdateConfig)
+RBx.FocusLost:Connect(UpdateConfig)
+
+local function getT()
+    UpdateConfig()
+    local sN = string.lower(C.N)
+    if sN == "" then return nil end
+    for _, pl in ipairs(P:GetPlayers()) do
+        if pl ~= LP then
+            local pName = string.lower(pl.Name)
+            local pDisp = string.lower(pl.DisplayName)
+            if string.find(pName, sN) or string.find(pDisp, sN) then
+                if pl.Character and pl.Character:FindFirstChild("Humanoid") and pl.Character.Humanoid.Health > 0 then
+                    return pl.Character:FindFirstChild(C.P)
+                end
+            end
+        end
+    end
+    return nil
+end
+
+RB.MouseButton1Click:Connect(function()
+    UpdateConfig()
+    tC = getT()
+    RB.BackgroundColor3 = Color3.fromRGB(40, 200, 100)
+    task.wait(0.3)
+    RB.BackgroundColor3 = Color3.fromRGB(50, 120, 200)
+end)
+
+TB.MouseButton1Click:Connect(function()
+    C.E = not C.E
+    UpdateConfig()
+    if C.E then
+        TB.Text, TB.BackgroundColor3, tC = "Target Farm: ON", Color3.fromRGB(50, 200, 100), getT()
+    else
+        TB.Text, TB.BackgroundColor3, tC = "Target Farm: OFF", Color3.fromRGB(200, 50, 60), nil
+    end
+end)
+
+RS.RenderStepped:Connect(function(dt)
+    if C.E then
+        if not tC or not tC.Parent or tC.Parent.Humanoid.Health <= 0 then
+            tC = getT()
+        end
+        local mC = LP.Character
+        if tC and mC and mC:FindFirstChild("HumanoidRootPart") then
+            local rP = mC.HumanoidRootPart
+            ang = ang + (C.S * dt)
+            local tPos = tC.Position
+            rP.CFrame = CFrame.new(Vector3.new(tPos.X + math.cos(ang)*C.R, tPos.Y, tPos.Z + math.sin(ang)*C.R), tPos)
+            rP.Velocity = Vector3.new(0,0,0)
+        end
+    end
+end)
